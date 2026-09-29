@@ -1,0 +1,6 @@
+fastapi>=0.116
+uvicorn[standard]>=0.35
+websockets>=15
+python-can>=4.6
+cantools>=40
+pydantic>=2.10

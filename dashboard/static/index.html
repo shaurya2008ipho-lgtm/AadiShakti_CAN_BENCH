@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aadi-Shakti CAN Bench</title>
+  <style>
+    :root{--bg:#04111d;--panel:#071c2d;--line:#117fb6;--text:#e7f7ff;--muted:#82a5b8;--good:#29e9a5;--warn:#ffd44a;--bad:#ff5862}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 70% 10%,#082b42,#020912 55%);color:var(--text);font:14px Segoe UI,Arial,sans-serif}
+    header{padding:18px 24px;border-bottom:1px solid #0c587e;background:#03101b} header h1{margin:0;font-size:24px;letter-spacing:2px} header p{margin:5px 0 0;color:var(--muted)}
+    main{padding:18px;display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.card{background:rgba(6,26,43,.94);border:1px solid var(--line);border-radius:10px;overflow:hidden}.head{padding:11px 14px;border-bottom:1px solid #0e4e70;font-weight:800;letter-spacing:.7px}.body{padding:14px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.metric{padding:12px;border:1px solid #154761;border-radius:8px;background:#061727}.metric span{display:block;color:var(--muted);font-size:11px}.metric b{display:block;margin-top:7px;font-size:21px}
+    table{width:100%;border-collapse:collapse}td,th{padding:8px;text-align:left;border-bottom:1px solid #12354a;font-size:12px}th{color:#80a9bd}.pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px}.good{background:#0d5a45;color:#b7ffe9}.warn{background:#6a5410;color:#fff0a3}.bad{background:#681f29;color:#ffc4c8}
+    .log{height:260px;overflow:auto;background:#020a12;padding:10px;font:11px Consolas,monospace}.row{padding:5px 0;border-bottom:1px dashed #163749}.row b{color:#9feaff}.raw{color:#809cac}.footer{padding:12px 18px;color:#6f92a5;font-size:11px;border-top:1px solid #103d54}
+    @media(max-width:950px){main{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+<header><h1>AADI-SHAKTI / CAN BENCH</h1><p>Software-in-the-loop telemetry demonstrator · simulation only</p></header>
+<main>
+<section class="card"><div class="head">DECODED TELEMETRY</div><div class="body"><div class="grid" id="metrics"></div></div></section>
+<section class="card"><div class="head">BUS STATUS</div><div class="body"><table><tr><th>Interface</th><td id="iface">virtual</td></tr><tr><th>Channel</th><td id="channel">aadi-demo</td></tr><tr><th>Connection</th><td><span id="status" class="pill warn">CONNECTING</span></td></tr><tr><th>Messages</th><td id="count">0</td></tr></table></div></section>
+<section class="card" style="grid-column:1/-1"><div class="head">CAN FRAME LOG</div><div class="body"><div class="log" id="log"></div></div></section>
+</main>
+<div class="footer">Use the software-only virtual bus for the hackathon demo. No aircraft/vehicle control is implemented.</div>
+<script>
+const metrics={
+  RPM:'RPM',
+  CHT:'CHT',
+  EGT:'EGT',
+  OilPressure:'OilPressure',
+  OilTemp:'OilTemp',
+  FuelFlow:'FuelFlow',
+  Vibration:'Vibration',
+  Battery:'Battery',
+  InjectionTiming:'InjectionTiming'
+};
+const values={}; let count=0;
+function render(){document.getElementById('metrics').innerHTML=Object.entries(metrics).map(([label,key])=>`<div class="metric"><span>${label}</span><b>${values[key]===undefined?'--':Number(values[key]).toFixed(2)}</b></div>`).join('')}
+function addLog(data){const log=document.getElementById('log'); const div=document.createElement('div'); div.className='row'; div.innerHTML=`<b>${data.id}</b> ${data.message} <span class="raw">${data.raw||''}</span><br>${JSON.stringify(data.signals||{})}`; log.prepend(div); while(log.children.length>60)log.lastChild.remove()}
+function connect(){const proto=location.protocol==='https:'?'wss':'ws'; const ws=new WebSocket(`${proto}://${location.host}/ws`); ws.onopen=()=>{document.getElementById('status').textContent='ONLINE';document.getElementById('status').className='pill good'}; ws.onclose=()=>{document.getElementById('status').textContent='RECONNECTING';document.getElementById('status').className='pill warn';setTimeout(connect,1200)}; ws.onmessage=e=>{const data=JSON.parse(e.data); if(data.heartbeat)return; count++; document.getElementById('count').textContent=count; Object.entries(data.signals||{}).forEach(([k,v])=>values[k]=v => {values[k] = v;}); render(); addLog(data)} }
+render(); connect();
+</script>
+</body></html>
